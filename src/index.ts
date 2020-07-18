@@ -1,3 +1,5 @@
+import { MeResolver } from './modules/user/Me';
+import { LoginResolver } from './modules/user/Login';
 import 'reflect-metadata';
 import { ApolloServer } from 'apollo-server-express';
 import Express from 'express';
@@ -12,7 +14,7 @@ const main = async () => {
 	await createConnection();
 
 	const schema = await buildSchema({
-		resolvers: [ RegisterResolver ]
+		resolvers: [ RegisterResolver, LoginResolver, MeResolver ]
 	});
 	const apolloServer = new ApolloServer({
 		schema,
@@ -21,6 +23,12 @@ const main = async () => {
 	const app = Express();
 
 	const RedisStore = connectRedis(session);
+	app.use(
+		cors({
+			credentials: true,
+			origin: 'http://localhost:3000'
+		})
+	);
 	const sessionOption: session.SessionOptions = {
 		store: new RedisStore({
 			client: redis as any
@@ -37,12 +45,7 @@ const main = async () => {
 	};
 
 	app.use(session(sessionOption));
-	app.use(
-		cors({
-			credentials: true,
-			origin: 'http://localhost:3000'
-		})
-	);
+
 	apolloServer.applyMiddleware({ app });
 	app.listen(4000, () => {
 		console.log('Listening at http://localhost:4000/graphql');
